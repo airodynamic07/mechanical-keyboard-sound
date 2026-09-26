@@ -8,7 +8,8 @@ file name decides when it plays:
 * every other file plays for normal keys.
 
 Keys without their own recordings fall back to the normal-key sounds. With
-several files for the same key, one is picked at random on each press.
+several sounds for the same kind of key, each key gets its own one. A file
+with a recording of someone typing is cut into single keystrokes.
 """
 
 from __future__ import annotations
@@ -77,3 +78,59 @@ def trim_silence(samples: np.ndarray, threshold: float = 0.02) -> np.ndarray:
     start = max(0, loud[0] - int(0.001 * SAMPLE_RATE))
     end = loud[-1] + 1
     return samples[start:end]
+
+
+def split_keystrokes(
+    samples: np.ndarray,
+    rate: int = SAMPLE_RATE,
+    min_gap: float = 0.06,
+    max_length: float = 0.35,
+    max_clips: int = 200,
+) -> list[np.ndarray]:
+    """Cut a recording of someone typing into one clip per keystroke.
+
+    Keystrokes are found as jumps in loudness above the background noise,
+    at least ``min_gap`` seconds apart. A recording with a single keystroke
+    comes back as one clip.
+    """
+    whole = [trim_silence(samples)]
+    level = np.abs(samples.astype(np.float32))
+    if level.ndim > 1:
+        level = level.max(axis=1)
+    hop = max(1, int(0.005 * rate))
+    frames = len(level) // hop
+    if frames < 2:
+        return whole
+    energy = level[: frames * hop].reshape(frames, hop).max(axis=1)
+    floor = np.percentile(energy, 20)
+    top = np.percentile(energy, 99.5)
+    if top <= floor:
+        return whole
+    threshold = floor + 0.2 * (top - floor)
+
+    onsets: list[int] = []
+    gap = int(min_gap * rate / hop)
+    for i in range(1, frames):
+        if energy[i] >= threshold > energy[i - 1] and (not onsets or i - onsets[-1] >= gap):
+            onsets.append(i)
+    if len(onsets) <= 1:
+        return whole
+
+    pad = int(0.002 * rate)
+    fade = int(0.01 * rate)
+    clips = []
+    for n, onset in enumerate(onsets[:max_clips]):
+        start = max(0, onset * hop - pad)
+        end = start + int(max_length * rate)
+        if n + 1 < len(onsets):
+            end = min(end, onsets[n + 1] * hop - pad)
+        clip = trim_silence(samples[start:end])
+        if len(clip) < int(0.015 * rate):
+            continue
+        clip = clip.astype(np.float32)
+        # Fade out so a clip cut short by the next keystroke doesn't pop.
+        n_fade = min(fade, len(clip) // 2)
+        ramp = np.linspace(1.0, 0.0, n_fade)
+        clip[-n_fade:] *= ramp[:, None] if clip.ndim > 1 else ramp
+        clips.append(clip.astype(samples.dtype))
+    return clips or whole

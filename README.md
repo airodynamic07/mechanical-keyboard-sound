@@ -31,6 +31,7 @@ mechsound --export sounds/    # save the generated sounds as WAV files
 | `-s, --sounds` | folder of your own recordings to play instead |
 | `--no-release` | only play a sound on key down |
 | `--repeat` | also play a sound for auto-repeat while a key is held |
+| `--random` | random sound on every press instead of one sound per key |
 
 | Profile | Sound |
 | --- | --- |
@@ -62,7 +63,9 @@ The start of each file name decides when it plays:
 | `release*` | any key being let go (optional) |
 | anything else | all other keys |
 
-Each file should hold a single keystroke. Several files with the same kind of name (for example `key1.wav`, `key2.wav`, `key3.wav`) are picked at random, which sounds more natural. Silence at the start and end of each file is trimmed automatically so the sound plays the instant you press the key. Keys without their own recordings use the normal key sounds.
+A file can hold a single keystroke or a whole recording of someone typing: long recordings are cut into one sound per keystroke automatically. Silence at the start and end is trimmed so the sound plays the instant you press the key. Keys without their own recordings use the normal key sounds.
+
+Like on a real keyboard, each key always plays its own sound from the pool, so `A` always sounds like `A` and `K` like `K`. Use `--random` to pick a random sound on every press instead.
 
 You can record your own keyboard with a phone, or download free recordings, for example from [freesound.org](https://freesound.org/search/?q=mechanical+keyboard). Check each sound's license before sharing it.
 

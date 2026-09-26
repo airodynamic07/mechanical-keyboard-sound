@@ -14,9 +14,10 @@ How files are used (by the start of the file name):
     release.wav               when a key is let go (optional)
 
 Tips:
-- Add several different key sounds (key1, key2, key3...). One is picked at
-  random each press, which sounds much more natural.
-- Each file should contain ONE keystroke. Silence at the start and end is
-  cut off automatically.
+- The easiest option: one recording of someone typing on a mechanical
+  keyboard. It is cut into single keystrokes automatically, and every key
+  on your keyboard gets its own sound from it.
+- You can also add separate files with one keystroke each (key1, key2...).
+  Silence at the start and end is cut off automatically.
 - Missing space/enter/backspace/modifier files are fine: normal key sounds
   are used instead.

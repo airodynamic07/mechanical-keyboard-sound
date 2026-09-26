@@ -37,6 +37,11 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--repeat", action="store_true", help="play a sound for every auto-repeat of a held key"
     )
     parser.add_argument(
+        "--random",
+        action="store_true",
+        help="pick a random sound on every press instead of giving each key its own",
+    )
+    parser.add_argument(
         "-s",
         "--sounds",
         metavar="DIR",
@@ -71,10 +76,10 @@ def _demo(player, release: bool) -> None:
     text = "hello world, this is mechsound.\n"
     for ch in text:
         kind = {" ": KeyKind.SPACE, "\n": KeyKind.ENTER}.get(ch, KeyKind.NORMAL)
-        player.play(kind, press=True)
+        player.play(kind, press=True, key=ch)
         time.sleep(0.07)
         if release:
-            player.play(kind, press=False)
+            player.play(kind, press=False, key=ch)
         time.sleep(0.03 + (0.12 if ch in " .,\n" else 0.0))
     time.sleep(0.3)
 
@@ -91,14 +96,14 @@ def _listen(player, release: bool, repeat: bool) -> None:
             if ident in held and not repeat:
                 return
             held.add(ident)
-        player.play(classify(ident), press=True)
+        player.play(classify(ident), press=True, key=ident)
 
     def on_release(key) -> None:
         ident = key_id(key)
         with lock:
             held.discard(ident)
         if release:
-            player.play(classify(ident), press=False)
+            player.play(classify(ident), press=False, key=ident)
 
     with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
         listener.join()
@@ -136,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     from mechsound.player import Player
 
     try:
-        player = Player(bank, volume=args.volume)
+        player = Player(bank, volume=args.volume, per_key=not args.random)
     except ValueError as exc:
         print(f"mechsound: {exc}", file=sys.stderr)
         return 1
@@ -144,6 +149,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.demo:
             _demo(player, release=not args.no_release)
         else:
+            if args.sounds:
+                source += f" ({player.sound_count()} key sounds)"
             print(f"mechsound: {source} at volume {player.volume:.2f}. Ctrl+C to quit.")
             _listen(player, release=not args.no_release, repeat=args.repeat)
     except KeyboardInterrupt:
