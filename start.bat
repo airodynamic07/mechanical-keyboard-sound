@@ -1,5 +1,7 @@
 @echo off
-rem Double-click this file to start mechsound. The first run sets it up.
+rem Double-click to turn on keyboard sounds. A key icon appears next to the
+rem clock: click it to turn the sound on/off, right-click for volume and quit.
+rem The first run sets everything up.
 cd /d "%~dp0"
 
 if exist ".venv\Scripts\activate.bat" (
@@ -7,27 +9,15 @@ if exist ".venv\Scripts\activate.bat" (
 ) else if exist "..\.venv\Scripts\activate.bat" (
     call "..\.venv\Scripts\activate.bat"
 ) else (
-    echo First run: setting up mechsound, this takes a minute...
+    echo First run: setting up keyboard sounds, this takes a minute...
     python -m venv .venv || goto nopython
     call ".venv\Scripts\activate.bat"
 )
 
-rem Install (or reinstall after an update) if the command is missing.
-where mechsound >nul 2>nul || python -m pip install -e . || goto failed
+rem Install, or finish installing after an update, if the tray app is missing.
+where mechsound-tray >nul 2>nul || python -m pip install -e . || goto failed
 
-set "HAS_SOUNDS="
-for %%f in (sounds\*.wav sounds\*.mp3 sounds\*.ogg sounds\*.flac) do set "HAS_SOUNDS=1"
-
-echo.
-echo Type in any app to hear the sounds. Close this window to stop.
-echo.
-if defined HAS_SOUNDS (
-    mechsound --sounds sounds %*
-) else (
-    echo No recordings in the sounds folder, using the built-in sounds.
-    mechsound %*
-)
-pause
+start "" mechsound-tray %*
 exit /b
 
 :nopython

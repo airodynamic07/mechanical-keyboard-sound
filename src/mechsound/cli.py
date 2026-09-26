@@ -84,7 +84,8 @@ def _demo(player, release: bool) -> None:
     time.sleep(0.3)
 
 
-def _listen(player, release: bool, repeat: bool) -> None:
+def make_listener(player, release: bool, repeat: bool):
+    """A (not yet started) system-wide keyboard listener that drives ``player``."""
     from pynput import keyboard
 
     held: set[str] = set()
@@ -105,7 +106,11 @@ def _listen(player, release: bool, repeat: bool) -> None:
         if release:
             player.play(classify(ident), press=False, key=ident)
 
-    with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
+    return keyboard.Listener(on_press=on_press, on_release=on_release)
+
+
+def _listen(player, release: bool, repeat: bool) -> None:
+    with make_listener(player, release, repeat) as listener:
         listener.join()
 
 

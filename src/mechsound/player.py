@@ -24,6 +24,8 @@ class Player:
         self, bank: dict, volume: float = 0.7, channels: int = 32, per_key: bool = True
     ) -> None:
         os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
+        # Otherwise SDL swallows Ctrl+C and termination requests.
+        os.environ.setdefault("SDL_NO_SIGNAL_HANDLERS", "1")
         import pygame
 
         # A small buffer keeps the delay between keypress and sound unnoticeable.
@@ -44,6 +46,7 @@ class Player:
                     sounds.append(pygame.sndarray.make_sound(to_int16_stereo(source)))
             self._sounds[key] = sounds
         self.per_key = per_key
+        self.muted = False
         self.volume = volume
 
     @staticmethod
@@ -80,6 +83,8 @@ class Player:
         return random.choice(variants)
 
     def play(self, kind: KeyKind, press: bool = True, key: str | None = None) -> None:
+        if self.muted:
+            return
         sound = self.pick(kind, press, key)
         if sound is not None:
             sound.play()
