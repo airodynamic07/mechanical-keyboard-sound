@@ -26,10 +26,21 @@ mechsound --export sounds/    # save the generated sounds as WAV files
 
 | Option | Description |
 | --- | --- |
-| `-p, --profile` | `blue`, `brown` (default), `red`, `thock` |
+| `-p, --profile` | `blue`, `brown` (default), `red`, `thock`, `deep`, `clicky`, `soft`, `mix` |
 | `-v, --volume` | 0.0 to 1.0 (default 0.7) |
 | `--no-release` | only play a sound on key down |
 | `--repeat` | also play a sound for auto-repeat while a key is held |
+
+| Profile | Sound |
+| --- | --- |
+| `blue` | clicky: sharp click on press and release |
+| `brown` | tactile: muted bump, medium clack |
+| `red` | linear: smooth, softer clack |
+| `thock` | lubed linear in a dampened case: deep and creamy |
+| `deep` | heavy bass: low, rounded bottom-out with little clack |
+| `clicky` | extra clicky: loud, crisp click like a typewriter |
+| `soft` | quiet and gentle, easy on the ears for long sessions |
+| `mix` | deep bass with a light click, at a gentle volume |
 
 ## Platform notes
 

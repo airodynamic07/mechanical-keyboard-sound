@@ -52,6 +52,7 @@ class SwitchProfile:
     decay: float  # overall decay time constant (seconds)
     click_gain: float = 0.0  # high click leaf, clicky switches only
     release_gain: float = 0.45
+    level: float = 1.0  # overall loudness relative to the other profiles
 
 
 PROFILES: dict[str, SwitchProfile] = {
@@ -96,6 +97,50 @@ PROFILES: dict[str, SwitchProfile] = {
             thock_gain=0.9,
             decay=0.04,
             release_gain=0.25,
+        ),
+        SwitchProfile(
+            name="deep",
+            description="Heavy bass: low, rounded bottom-out with little clack",
+            clack_freq=1000,
+            clack_gain=0.3,
+            thock_freq=125,
+            thock_gain=1.0,
+            decay=0.05,
+            release_gain=0.2,
+        ),
+        SwitchProfile(
+            name="clicky",
+            description="Extra clicky: loud, crisp click like a typewriter",
+            clack_freq=4200,
+            clack_gain=0.5,
+            thock_freq=460,
+            thock_gain=0.25,
+            decay=0.014,
+            click_gain=1.4,
+            release_gain=0.75,
+        ),
+        SwitchProfile(
+            name="soft",
+            description="Quiet and gentle, easy on the ears for long sessions",
+            clack_freq=1500,
+            clack_gain=0.4,
+            thock_freq=210,
+            thock_gain=0.5,
+            decay=0.03,
+            release_gain=0.15,
+            level=0.45,
+        ),
+        SwitchProfile(
+            name="mix",
+            description="Deep bass with a light click, at a gentle volume",
+            clack_freq=1500,
+            clack_gain=0.35,
+            thock_freq=140,
+            thock_gain=0.9,
+            decay=0.04,
+            click_gain=2.5,
+            release_gain=0.3,
+            level=0.6,
         ),
     )
 }
@@ -167,7 +212,7 @@ def render_press(
         rattle = _band_noise(rng, len(rattle_t), 1800 * pitch, 600) * np.exp(-rattle_t / (decay * 0.7))
         _place(buf, rattle * 0.25, offset + rng.uniform(0.012, 0.02))
 
-    return _normalise(buf, rng.uniform(0.8, 0.95))
+    return _normalise(buf, profile.level * rng.uniform(0.8, 0.95))
 
 
 def render_release(
@@ -181,7 +226,7 @@ def render_release(
     buf *= np.exp(-t / decay)
     if profile.click_gain:
         buf += _band_noise(rng, len(t), 5000 * pitch, 900) * np.exp(-t / 0.001) * 0.6
-    return _normalise(buf, profile.release_gain * rng.uniform(0.85, 1.0))
+    return _normalise(buf, profile.level * profile.release_gain * rng.uniform(0.85, 1.0))
 
 
 SoundBank = dict[tuple[KeyKind, bool], list[np.ndarray]]
