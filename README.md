@@ -8,6 +8,17 @@ All sounds are synthesized when the app starts, so there are no audio files to d
 
 Requires Python 3.9+.
 
+**Windows, the easy way:** double-click `start.bat`. The first run sets everything up (about a minute). After that a key icon appears in the system tray, next to the clock:
+
+- **left-click** the icon to turn the sound on or off (it turns grey with a red line when off),
+- **right-click** it for the volume and **Quit**.
+
+It uses your recordings in the `sounds` folder if there are any, otherwise the built-in sounds. For a Desktop icon, right-click `start.bat` → *Show more options* → *Send to* → *Desktop (create shortcut)*.
+
+The tray app can also be started directly with `mechsound-tray` (it takes `--sounds`, `--profile` and `--volume` too).
+
+**Any platform, by hand:**
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
@@ -93,3 +104,4 @@ Code layout:
 - `src/mechsound/recordings.py`: loads your own recordings from a folder
 - `src/mechsound/player.py`: low-latency playback with `pygame.mixer`
 - `src/mechsound/cli.py`: command-line entry point and keyboard listener
+- `src/mechsound/tray.py`: system tray app

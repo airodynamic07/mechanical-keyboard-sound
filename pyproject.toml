@@ -10,8 +10,10 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "numpy>=1.24",
+    "Pillow>=9",
     "pygame>=2.5",
     "pynput>=1.7",
+    "pystray>=0.19",
 ]
 
 [project.optional-dependencies]
@@ -19,6 +21,10 @@ dev = ["pytest>=7"]
 
 [project.scripts]
 mechsound = "mechsound.cli:main"
+
+# A GUI script gets no console window on Windows.
+[project.gui-scripts]
+mechsound-tray = "mechsound.tray:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
