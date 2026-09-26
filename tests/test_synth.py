@@ -51,3 +51,18 @@ def test_int16_stereo_layout():
     assert out.dtype == np.int16
     assert out[:, 0].tolist() == [0, 32767, -32767, 32767]
     assert out.flags["C_CONTIGUOUS"]
+
+
+def _centroid(samples):
+    freqs = np.fft.rfftfreq(len(samples), 1 / 44100)
+    power = np.abs(np.fft.rfft(samples)) ** 2
+    return (freqs * power).sum() / power.sum()
+
+
+def test_new_profiles_sound_as_described():
+    def press(name):
+        return render_press(PROFILES[name], KeyKind.NORMAL, np.random.default_rng(0))
+
+    assert _centroid(press("deep")) < _centroid(press("brown"))
+    assert _centroid(press("clicky")) > _centroid(press("blue"))
+    assert np.max(np.abs(press("soft"))) < 0.5 * np.max(np.abs(press("brown")))

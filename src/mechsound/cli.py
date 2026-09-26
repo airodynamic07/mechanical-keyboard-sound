@@ -36,6 +36,13 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument(
         "--repeat", action="store_true", help="play a sound for every auto-repeat of a held key"
     )
+    parser.add_argument(
+        "-s",
+        "--sounds",
+        metavar="DIR",
+        type=Path,
+        help="play your own recordings (.wav/.ogg/.mp3/.flac) from DIR instead of synthesised sounds",
+    )
     parser.add_argument("--list", action="store_true", help="list switch profiles and exit")
     parser.add_argument(
         "--demo", action="store_true", help="play a short typing demo instead of listening"
@@ -106,20 +113,38 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{name:<8}{PROFILES[name].description}{marker}")
         return 0
 
-    bank = build_bank(PROFILES[args.profile])
+    if args.sounds:
+        from mechsound.recordings import scan
+
+        try:
+            bank = scan(args.sounds)
+        except (OSError, ValueError) as exc:
+            print(f"mechsound: {exc}", file=sys.stderr)
+            return 1
+        source = f"sounds from '{args.sounds}'"
+    else:
+        bank = build_bank(PROFILES[args.profile])
+        source = f"'{args.profile}' switches"
 
     if args.export:
+        if args.sounds:
+            print("mechsound: --export only works with the built-in profiles", file=sys.stderr)
+            return 1
         _export(bank, args.export)
         return 0
 
     from mechsound.player import Player
 
-    player = Player(bank, volume=args.volume)
+    try:
+        player = Player(bank, volume=args.volume)
+    except ValueError as exc:
+        print(f"mechsound: {exc}", file=sys.stderr)
+        return 1
     try:
         if args.demo:
             _demo(player, release=not args.no_release)
         else:
-            print(f"mechsound: '{args.profile}' switches at volume {player.volume:.2f}. Ctrl+C to quit.")
+            print(f"mechsound: {source} at volume {player.volume:.2f}. Ctrl+C to quit.")
             _listen(player, release=not args.no_release, repeat=args.repeat)
     except KeyboardInterrupt:
         pass
