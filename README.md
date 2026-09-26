@@ -8,6 +8,10 @@ All sounds are synthesized when the app starts, so there are no audio files to d
 
 Requires Python 3.9+.
 
+**Windows, the easy way:** double-click `start.bat`. The first run sets everything up (about a minute), and after that it starts the app straight away, using your recordings in the `sounds` folder if there are any. Close the window to stop.
+
+**Any platform, by hand:**
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
