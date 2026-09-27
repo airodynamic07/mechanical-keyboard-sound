@@ -1,6 +1,7 @@
 @echo off
 rem Double-click to turn on keyboard sounds. A key icon appears next to the
-rem clock: click it to turn the sound on/off, right-click for volume and quit.
+rem clock: click it to turn the sound on/off, right-click to pick a sound,
+rem change the volume or quit.
 rem The first run sets everything up.
 cd /d "%~dp0"
 

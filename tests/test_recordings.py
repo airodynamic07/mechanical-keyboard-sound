@@ -133,3 +133,10 @@ def test_long_file_becomes_many_sounds_and_keys_keep_their_sound(tmp_path, monke
         assert len({id(player.pick(KeyKind.NORMAL, key="a")) for _ in range(30)}) > 1
     finally:
         player.close()
+
+
+def test_scan_only_one_key_file(tmp_path):
+    _touch(tmp_path, "a.wav", "b.wav", "space.wav")
+    bank = scan(tmp_path, only="b.wav")
+    assert [p.name for p in bank[(KeyKind.NORMAL, True)]] == ["b.wav"]
+    assert [p.name for p in bank[(KeyKind.SPACE, True)]] == ["space.wav"]

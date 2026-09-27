@@ -32,22 +32,37 @@ class Player:
         pygame.mixer.pre_init(SAMPLE_RATE, -16, 2, 256)
         pygame.mixer.init()
         pygame.mixer.set_num_channels(channels)
+        self._sounds = self._load_bank(bank)
+        self.per_key = per_key
+        self.muted = False
+        self.volume = volume
+
+    @classmethod
+    def _load_bank(cls, bank: dict) -> dict:
+        import pygame
+
         rate = pygame.mixer.get_init()[0]
         files: dict[Path, list] = {}  # the same file can back several key kinds
-        self._sounds = {}
+        loaded = {}
         for key, variants in bank.items():
             sounds = []
             for source in variants:
                 if isinstance(source, Path):
                     if source not in files:
-                        files[source] = self._load_file(pygame, source, rate)
+                        files[source] = cls._load_file(pygame, source, rate)
                     sounds.extend(files[source])
                 else:
                     sounds.append(pygame.sndarray.make_sound(to_int16_stereo(source)))
-            self._sounds[key] = sounds
-        self.per_key = per_key
-        self.muted = False
-        self.volume = volume
+            loaded[key] = sounds
+        return loaded
+
+    def set_bank(self, bank: dict) -> None:
+        """Switch to other sounds while running, keeping the volume."""
+        sounds = self._load_bank(bank)
+        for variants in sounds.values():
+            for sound in variants:
+                sound.set_volume(self._volume)
+        self._sounds = sounds  # one assignment, so a keypress never sees half a bank
 
     @staticmethod
     def _load_file(pygame, path: Path, rate: int) -> list:

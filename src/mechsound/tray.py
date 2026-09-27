@@ -1,7 +1,8 @@
 """Run mechsound from an icon in the system tray (next to the clock).
 
-Left-click the icon to turn the sound on or off; right-click for volume and
-quit. Installed as the windowless ``mechsound-tray`` program, so there is no
+Left-click the icon to turn the sound on or off; right-click to pick a
+sound, change the volume or quit. Installed as the windowless
+``mechsound-tray`` program, so there is no
 console window to keep open.
 """
 
@@ -12,7 +13,7 @@ import socket
 import sys
 from pathlib import Path
 
-from mechsound.recordings import EXTENSIONS, scan
+from mechsound.recordings import EXTENSIONS, key_files, scan
 from mechsound.synth import DEFAULT_PROFILE, PROFILES, build_bank
 
 # Holding this local port open marks the tray app as running, so a second
@@ -23,6 +24,59 @@ VOLUMES = (0.25, 0.5, 0.75, 1.0)
 
 # The ``sounds`` folder of the project this package was installed from.
 PROJECT_SOUNDS = Path(__file__).resolve().parents[2] / "sounds"
+
+# Remembers the sound picked in the menu for the next start.
+CHOICE_FILE = Path.home() / ".mechsound-sound"
+
+# Menu choices are stored as "file:<name>", "all" or "profile:<name>".
+ALL_FILES = "all"
+
+
+def sound_choices(sounds: Path | None) -> list[tuple[str, str]]:
+    """(choice, menu label) for each file in ``sounds`` and each built-in profile."""
+    choices = []
+    files = key_files(sounds) if sounds else []
+    choices += [(f"file:{p.name}", p.stem) for p in files]
+    if len(files) > 1:
+        choices.append((ALL_FILES, "All my sounds mixed"))
+    choices += [(f"profile:{name}", f"Built-in: {name}") for name in sorted(PROFILES)]
+    return choices
+
+
+def load_bank(choice: str, sounds: Path | None):
+    if choice.startswith("profile:"):
+        return build_bank(PROFILES[choice.split(":", 1)[1]])
+    only = choice.split(":", 1)[1] if choice.startswith("file:") else None
+    return scan(sounds, only=only)
+
+
+def read_choice(path: Path = CHOICE_FILE) -> str | None:
+    try:
+        return path.read_text(encoding="utf-8").strip() or None
+    except OSError:
+        return None
+
+
+def save_choice(choice: str, path: Path = CHOICE_FILE) -> None:
+    try:
+        path.write_text(choice, encoding="utf-8")
+    except OSError:
+        pass  # not remembering the choice is no reason to fail
+
+
+def initial_choice(profile: str | None, sounds: Path | None, saved: str | None) -> str:
+    """``--profile`` wins, then the last pick from the menu, then the user's recordings."""
+    if profile:
+        return f"profile:{profile}"
+    valid = {choice for choice, _ in sound_choices(sounds)}
+    if saved in valid:
+        return saved
+    files = key_files(sounds) if sounds else []
+    if len(files) == 1:
+        return f"file:{files[0].name}"
+    if files:
+        return ALL_FILES
+    return f"profile:{DEFAULT_PROFILE}"
 
 
 def default_sounds_dir(candidate: Path = PROJECT_SOUNDS) -> Path | None:
@@ -63,7 +117,9 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="mechsound-tray", description="Run mechsound from a system tray icon."
     )
-    parser.add_argument("-p", "--profile", choices=sorted(PROFILES), default=DEFAULT_PROFILE)
+    parser.add_argument(
+        "-p", "--profile", choices=sorted(PROFILES), help="start with a built-in sound"
+    )
     parser.add_argument("-v", "--volume", type=float, default=0.75)
     parser.add_argument(
         "-s", "--sounds", type=Path, help=f"recordings folder (default: {PROJECT_SOUNDS})"
@@ -81,9 +137,10 @@ def main(argv: list[str] | None = None) -> int:
         _show_error("Keyboard sounds are already running. Look for the key icon next to the clock.")
         return 1
 
+    sounds = args.sounds or default_sounds_dir()
+    choice = initial_choice(args.profile, sounds, read_choice())
     try:
-        sounds = args.sounds or default_sounds_dir()
-        bank = scan(sounds) if sounds else build_bank(PROFILES[args.profile])
+        bank = load_bank(choice, sounds)
 
         import pystray
 
@@ -95,11 +152,12 @@ def main(argv: list[str] | None = None) -> int:
         _show_error(f"Could not start: {exc}")
         return 1
 
-    source = f"your sounds ({player.sound_count()})" if sounds else f"'{args.profile}' sounds"
+    labels = dict(sound_choices(sounds))
+    current = {"choice": choice}
 
     def title() -> str:
         state = "off" if player.muted else "on"
-        return f"Keyboard sounds {state} - {source}"
+        return f"Keyboard sounds {state} - {labels.get(current['choice'], current['choice'])}"
 
     def refresh(icon) -> None:
         icon.icon = make_icon_image(not player.muted)
@@ -118,12 +176,40 @@ def main(argv: list[str] | None = None) -> int:
 
         return action
 
+    def pick_sound(value):
+        def action(icon, _item) -> None:
+            try:
+                player.set_bank(load_bank(value, sounds))
+            except Exception as exc:
+                _show_error(f"Could not load that sound: {exc}")
+                return
+            current["choice"] = value
+            save_choice(value)
+            player.muted = False
+            refresh(icon)
+
+        return action
+
     def quit_app(icon, _item) -> None:
         icon.stop()
 
     menu = pystray.Menu(
         pystray.MenuItem(
             "Sound on", toggle, checked=lambda _item: not player.muted, default=True
+        ),
+        pystray.MenuItem(
+            "Sound",
+            pystray.Menu(
+                *(
+                    pystray.MenuItem(
+                        label,
+                        pick_sound(value),
+                        checked=lambda _item, value=value: current["choice"] == value,
+                        radio=True,
+                    )
+                    for value, label in sound_choices(sounds)
+                )
+            ),
         ),
         pystray.MenuItem(
             "Volume",
