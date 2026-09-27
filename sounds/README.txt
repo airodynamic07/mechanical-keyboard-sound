@@ -1,4 +1,7 @@
-Put your keyboard recordings in this folder, then run:
+Put your keyboard recordings in this folder. With start.bat, right-click the
+key icon next to the clock and pick one under "Sound" to switch between them.
+
+From the command line, run:
 
     mechsound --sounds sounds
 

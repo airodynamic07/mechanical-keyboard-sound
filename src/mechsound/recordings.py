@@ -32,21 +32,39 @@ _PREFIXES = {
 RecordingBank = dict[tuple[KeyKind, bool], list[Path]]
 
 
-def scan(directory: Path) -> RecordingBank:
-    """Group the audio files in ``directory`` by the key they belong to."""
+def _slot(path: Path) -> tuple[KeyKind, bool]:
+    stem = path.stem.lower()
+    if stem.startswith("release"):
+        return (KeyKind.NORMAL, False)
+    kind = next((k for p, k in _PREFIXES.items() if stem.startswith(p)), KeyKind.NORMAL)
+    return (kind, True)
+
+
+def _audio_files(directory: Path) -> list[Path]:
+    return [p for p in sorted(directory.iterdir()) if p.suffix.lower() in EXTENSIONS]
+
+
+def key_files(directory: Path) -> list[Path]:
+    """The normal-key sound files in ``directory``: the sounds a user can choose between."""
+    if not directory.is_dir():
+        return []
+    return [p for p in _audio_files(directory) if _slot(p) == (KeyKind.NORMAL, True)]
+
+
+def scan(directory: Path, only: str | None = None) -> RecordingBank:
+    """Group the audio files in ``directory`` by the key they belong to.
+
+    With ``only`` (a file name), that file is the only normal-key sound;
+    space/enter/backspace/modifier/release files are still used.
+    """
     if not directory.is_dir():
         raise FileNotFoundError(f"sound folder not found: {directory}")
 
     bank: RecordingBank = {}
-    for path in sorted(directory.iterdir()):
-        if path.suffix.lower() not in EXTENSIONS:
+    for path in _audio_files(directory):
+        key = _slot(path)
+        if only is not None and key == (KeyKind.NORMAL, True) and path.name != only:
             continue
-        stem = path.stem.lower()
-        if stem.startswith("release"):
-            key = (KeyKind.NORMAL, False)
-        else:
-            kind = next((k for p, k in _PREFIXES.items() if stem.startswith(p)), KeyKind.NORMAL)
-            key = (kind, True)
         bank.setdefault(key, []).append(path)
 
     if (KeyKind.NORMAL, True) not in bank:

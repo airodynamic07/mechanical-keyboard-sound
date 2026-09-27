@@ -11,11 +11,11 @@ Requires Python 3.9+.
 **Windows, the easy way:** double-click `start.bat`. The first run sets everything up (about a minute). After that a key icon appears in the system tray, next to the clock:
 
 - **left-click** the icon to turn the sound on or off (it turns grey with a red line when off),
-- **right-click** it for the volume and **Quit**.
+- **right-click** it for **Sound**, **Volume** and **Quit**.
 
-It uses your recordings in the `sounds` folder if there are any, otherwise the built-in sounds. For a Desktop icon, right-click `start.bat` → *Show more options* → *Send to* → *Desktop (create shortcut)*.
+The **Sound** menu lists every sound file in the `sounds` folder by name, then the built-in sounds. Click one to switch right away; your pick is remembered for next time. With several files you can also choose **All my sounds mixed**. For a Desktop icon, right-click `start.bat` → *Show more options* → *Send to* → *Desktop (create shortcut)*.
 
-The tray app can also be started directly with `mechsound-tray` (it takes `--sounds`, `--profile` and `--volume` too).
+The tray app can also be started directly with `mechsound-tray` (it takes `--sounds`, `--profile` and `--volume` too; `--profile` starts with that built-in sound).
 
 **Any platform, by hand:**
 
